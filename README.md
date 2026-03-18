@@ -67,6 +67,7 @@ Direct mapping between the case requirements and their corresponding implementat
 
 | Command | Description |
 |---|---|
+| `make init` | **First-time setup**: copy `.env` + build + start |
 | `make env` | Copy `.env.example` → `.env` |
 | `make build` | Build Docker images (no cache) |
 | `make up` | Start containers in background |
@@ -203,8 +204,16 @@ cp .env.example .env
 
 This is the recommended way to run the full stack.
 
+> **TL;DR — first time? Just run:**
+> ```bash
+> make init
+> ```
+> That's it. It copies `.env`, builds the images and starts everything.
+
+If you prefer manual steps or don't have `make`:
+
 ```bash
-cp .env.example .env          # only needed once
+cp .env.example .env
 docker compose up --build
 ```
 
