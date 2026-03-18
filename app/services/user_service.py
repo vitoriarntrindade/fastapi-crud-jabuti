@@ -8,6 +8,7 @@ from app.repositories.user_repository import UserRepository
 from app.schemas.user import (
     PaginatedUsersResponse,
     UserCreate,
+    UserReplace,
     UserResponse,
     UserUpdate,
 )
@@ -86,7 +87,31 @@ class UserService:
         user = await self._repo.create(payload)
         response = UserResponse.model_validate(user)
         await self._cache.invalidate_user_lists()
+        await self._cache.set_user(user.id, response.model_dump(mode="json"))
         logger.info("User service: created user id=%s", user.id)
+        return response
+
+    async def replace_user(
+        self, user_id: uuid.UUID, payload: UserReplace
+    ) -> UserResponse:
+        """Fully replace an existing user (PUT semantics) and invalidate cache.
+
+        Args:
+            user_id: Target user UUID.
+            payload: Complete replacement data (all fields required).
+
+        Returns:
+            The replaced UserResponse.
+
+        Raises:
+            UserNotFoundError: If the user does not exist.
+            DuplicateEmailError: If the new email conflicts.
+        """
+        user = await self._repo.replace(user_id, payload)
+        response = UserResponse.model_validate(user)
+        await self._cache.invalidate_user(user_id)
+        await self._cache.invalidate_user_lists()
+        logger.info("User service: replaced user id=%s", user_id)
         return response
 
     async def update_user(

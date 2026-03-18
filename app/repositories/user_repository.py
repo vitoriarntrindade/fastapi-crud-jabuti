@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import DatabaseError, DuplicateEmailError, UserNotFoundError
 from app.database.models import User
-from app.schemas.user import UserCreate, UserUpdate
+from app.schemas.user import UserCreate, UserReplace, UserUpdate
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +85,8 @@ class UserRepository:
             await self._session.commit()
         except IntegrityError as exc:
             await self._session.rollback()
-            if "uq_users_email" in str(exc.orig):
+            orig_msg = str(exc.orig).lower()
+            if "uq_users_email" in orig_msg or "users.email" in orig_msg:
                 raise DuplicateEmailError(
                     f"Email {payload.email!r} is already registered"
                 ) from exc
@@ -95,12 +96,48 @@ class UserRepository:
         logger.info("User created — id=%s email=%s", user.id, user.email)
         return user
 
-    async def update(self, user_id: uuid.UUID, payload: UserUpdate) -> User:
-        """Apply partial updates to an existing user.
+    async def replace(self, user_id: uuid.UUID, payload: UserReplace) -> User:
+        """Fully replace an existing user (PUT semantics).
+
+        All fields are overwritten with the values provided in *payload*.
+        No field is left unchanged — the resource is completely replaced.
 
         Args:
             user_id: Target user UUID.
-            payload: Fields to update (None values are ignored).
+            payload: Complete replacement data (all fields required).
+
+        Returns:
+            The updated User ORM instance.
+
+        Raises:
+            UserNotFoundError: If the user does not exist.
+            DuplicateEmailError: If the new email conflicts with another user.
+            DatabaseError: On any other unexpected database error.
+        """
+        user = await self.get_by_id(user_id)
+        user.name = payload.name
+        user.email = payload.email
+        user.age = payload.age
+        try:
+            await self._session.flush()
+            await self._session.commit()
+        except IntegrityError as exc:
+            await self._session.rollback()
+            orig_msg = str(exc.orig).lower()
+            if "uq_users_email" in orig_msg or "users.email" in orig_msg:
+                raise DuplicateEmailError(
+                    f"Email {payload.email!r} is already registered"
+                ) from exc
+            raise DatabaseError(
+                "Unexpected database error during user replace"
+            ) from exc
+        logger.info("User replaced — id=%s", user_id)
+        return user
+
+    async def update(self, user_id: uuid.UUID, payload: UserUpdate) -> User:
+        """Apply partial updates to an existing user (PATCH semantics).
+
+        Only fields explicitly provided (non-None) are written to the record.
 
         Returns:
             The updated User ORM instance.
@@ -119,7 +156,8 @@ class UserRepository:
             await self._session.commit()
         except IntegrityError as exc:
             await self._session.rollback()
-            if "uq_users_email" in str(exc.orig):
+            orig_msg = str(exc.orig).lower()
+            if "uq_users_email" in orig_msg or "users.email" in orig_msg:
                 raise DuplicateEmailError(
                     f"Email {payload.email!r} is already registered"
                 ) from exc

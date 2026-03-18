@@ -11,6 +11,7 @@ from app.core.exceptions import DuplicateEmailError, UserNotFoundError
 from app.schemas.user import (
     PaginatedUsersResponse,
     UserCreate,
+    UserReplace,
     UserResponse,
     UserUpdate,
 )
@@ -72,16 +73,42 @@ async def create_user(
 
 
 @router.put("/{user_id}", response_model=UserResponse)
+async def replace_user(
+    user_id: uuid.UUID,
+    payload: UserReplace,
+    service: Annotated[UserService, Depends(get_user_service)],
+) -> UserResponse:
+    """Fully replace an existing user (PUT semantics).
+
+    All fields are required. The resource is completely overwritten with the
+    provided data — omitting a field is not the same as leaving it unchanged.
+    Invalidates cache entries for this user and all list pages.
+    """
+    logger.debug("PUT /users/%s", user_id)
+    try:
+        return await service.replace_user(user_id, payload)
+    except UserNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
+        ) from exc
+    except DuplicateEmailError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail=str(exc)
+        ) from exc
+
+
+@router.patch("/{user_id}", response_model=UserResponse)
 async def update_user(
     user_id: uuid.UUID,
     payload: UserUpdate,
     service: Annotated[UserService, Depends(get_user_service)],
 ) -> UserResponse:
-    """Update an existing user (partial update supported).
+    """Partially update an existing user (PATCH semantics).
 
+    Only the fields provided are updated; omitted fields remain unchanged.
     Invalidates cache entries for this user and all list pages.
     """
-    logger.debug("PUT /users/%s", user_id)
+    logger.debug("PATCH /users/%s", user_id)
     try:
         return await service.update_user(user_id, payload)
     except UserNotFoundError as exc:

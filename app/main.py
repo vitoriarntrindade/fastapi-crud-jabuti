@@ -47,7 +47,7 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title="Jabuti Users API",
         description=(
-            "Production-like Users CRUD API with FastAPI, PostgreSQL, and Redis."
+            "Users CRUD API with FastAPI, PostgreSQL, and Redis."
         ),
         version="0.1.0",
         docs_url="/docs",

@@ -9,7 +9,7 @@ from sqlalchemy.exc import IntegrityError
 from app.core.exceptions import DatabaseError, DuplicateEmailError, UserNotFoundError
 from app.database.models import User
 from app.repositories.user_repository import UserRepository
-from app.schemas.user import UserCreate, UserUpdate
+from app.schemas.user import UserCreate, UserReplace, UserUpdate
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -125,6 +125,58 @@ class TestCreate:
         # Act / Assert
         with pytest.raises(DatabaseError):
             await repo.create(_CAROL_PAYLOAD)
+
+
+class TestReplace:
+    async def test_overwrites_all_fields_and_returns_user(
+        self,
+        repo: UserRepository,
+        mock_session: MagicMock,
+        existing_user: User,
+    ) -> None:
+        # Arrange
+        mock_session.get.return_value = existing_user
+        payload = UserReplace(
+            name="Bob Replaced", email="replaced@example.com", age=99
+        )
+
+        # Act
+        result = await repo.replace(existing_user.id, payload)
+
+        # Assert
+        assert result.name == "Bob Replaced"
+        assert result.email == "replaced@example.com"
+        assert result.age == 99
+
+    async def test_raises_duplicate_email_on_conflict(
+        self,
+        repo: UserRepository,
+        mock_session: MagicMock,
+        existing_user: User,
+    ) -> None:
+        # Arrange
+        mock_session.get.return_value = existing_user
+        mock_session.flush.side_effect = IntegrityError(
+            statement=None, params=None, orig=Exception("uq_users_email")
+        )
+        payload = UserReplace(
+            name="Bob", email="conflict@example.com", age=25
+        )
+
+        # Act / Assert
+        with pytest.raises(DuplicateEmailError):
+            await repo.replace(existing_user.id, payload)
+
+    async def test_raises_user_not_found_when_missing(
+        self, repo: UserRepository, mock_session: MagicMock
+    ) -> None:
+        # Arrange
+        mock_session.get.return_value = None
+        payload = UserReplace(name="Ghost", email="ghost@example.com", age=0)
+
+        # Act / Assert
+        with pytest.raises(UserNotFoundError):
+            await repo.replace(uuid.uuid4(), payload)
 
 
 class TestUpdate:

@@ -2,6 +2,9 @@ services:
   db:
     image: postgres:16-alpine
     restart: unless-stopped
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     env_file:
       - .env
     environment:
@@ -19,6 +22,9 @@ services:
   cache:
     image: redis:7-alpine
     restart: unless-stopped
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -30,7 +36,12 @@ services:
       context: .
       dockerfile: Dockerfile
       target: runtime
+      args:
+        - BUILDKIT_INLINE_CACHE=1
     restart: unless-stopped
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     env_file:
       - .env
     environment:
@@ -47,7 +58,7 @@ services:
         condition: service_healthy
     command: >
       sh -c "alembic upgrade head &&
-             uvicorn app.main:app --host 0.0.0.0 --port 8001"
+             uvicorn app.main:app --host 0.0.0.0 --port ${APP_PORT:-8001}"
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
       interval: 10s

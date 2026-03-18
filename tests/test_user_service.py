@@ -7,7 +7,7 @@ import pytest
 
 from app.core.exceptions import DuplicateEmailError, UserNotFoundError
 from app.database.models import User
-from app.schemas.user import UserCreate, UserUpdate
+from app.schemas.user import UserCreate, UserReplace, UserUpdate
 from app.services.user_service import UserService
 
 
@@ -140,8 +140,11 @@ class TestCreateUser:
 
         # Assert
         mock_repository.create.assert_awaited_once_with(user_create_payload)
-        # On create, only list cache is invalidated — no per-user key exists yet
+        # List cache must be invalidated so stale pages are evicted
         mock_cache.invalidate_user_lists.assert_awaited_once()
+        # Per-user cache must be pre-populated to avoid a guaranteed cache miss
+        # on the first GET /users/{id} after creation
+        mock_cache.set_user.assert_awaited_once()
         mock_cache.invalidate_user.assert_not_awaited()
         assert result.email == sample_user.email
 
@@ -161,7 +164,62 @@ class TestCreateUser:
             await user_service.create_user(user_create_payload)
 
 
-class TestUpdateUser:
+class TestReplaceUser:
+    async def test_replaces_user_invalidates_cache_and_returns_response(
+        self,
+        user_service: UserService,
+        mock_repository: MagicMock,
+        mock_cache: MagicMock,
+        sample_user: User,
+        user_replace_payload: UserReplace,
+    ) -> None:
+        # Act
+        result = await user_service.replace_user(sample_user.id, user_replace_payload)
+
+        # Assert
+        mock_repository.replace.assert_awaited_once_with(
+            sample_user.id, user_replace_payload
+        )
+        # Both the per-user cache and all list pages must be invalidated because
+        # a full replacement changes the resource completely.
+        mock_cache.invalidate_user.assert_awaited_once_with(sample_user.id)
+        mock_cache.invalidate_user_lists.assert_awaited_once()
+        assert result.id == sample_user.id
+
+    async def test_propagates_user_not_found_error(
+        self,
+        user_service: UserService,
+        mock_repository: MagicMock,
+        user_replace_payload: UserReplace,
+    ) -> None:
+        # Arrange
+        missing_id = uuid.uuid4()
+        mock_repository.replace.side_effect = UserNotFoundError(
+            f"User {missing_id} not found"
+        )
+
+        # Act / Assert
+        with pytest.raises(UserNotFoundError):
+            await user_service.replace_user(missing_id, user_replace_payload)
+
+    async def test_propagates_duplicate_email_error(
+        self,
+        user_service: UserService,
+        mock_repository: MagicMock,
+        sample_user: User,
+        user_replace_payload: UserReplace,
+    ) -> None:
+        # Arrange
+        mock_repository.replace.side_effect = DuplicateEmailError(
+            "Email already registered"
+        )
+
+        # Act / Assert
+        with pytest.raises(DuplicateEmailError):
+            await user_service.replace_user(sample_user.id, user_replace_payload)
+
+
+class TestPatchUser:
     async def test_updates_user_invalidates_cache_and_returns_response(
         self,
         user_service: UserService,
