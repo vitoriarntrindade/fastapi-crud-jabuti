@@ -4,6 +4,9 @@
 > designed to reflect real-world engineering practices.
 
 ---
+<p align="center">
+  <img src="./assets/banner.png" alt="Jabuti Users API" width="70%">
+</p>
 
 ## 📌 Summary
 
