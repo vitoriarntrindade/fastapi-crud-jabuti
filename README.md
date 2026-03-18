@@ -17,7 +17,7 @@
 | Migrations | Alembic |
 | Cache | Redis 7 (read-through, auto-invalidation) |
 | Validation | Pydantic v2 |
-| Testing | pytest + pytest-asyncio (35 tests) |
+| Testing | pytest + pytest-asyncio (51 tests — unit + integration) |
 | Quality | Ruff + mypy strict |
 | Deploy | Docker Compose (3 services) |
 
@@ -26,6 +26,7 @@
 ## 📚 Table of Contents
 
 - [📖 Overview](#-overview)
+- [✅ Challenge Alignment](#-Challenge-Alignment)
 - [🏗 Architecture](#-architecture)
 - [📂 Project Structure](#-project-structure)
 - [⚙️ Environment Variables](#️-environment-variables)
@@ -40,6 +41,26 @@
 - [❓ Troubleshooting](#-troubleshooting)
 
 ---
+
+## ✅ Challenge Alignment
+
+Direct mapping between the case requirements and their corresponding implementations.
+
+| Requirement | Implementation |
+|------------|--------------|
+| Full user CRUD | `POST /users`, `GET /users`, `GET /users/{id}`, `PUT /users/{id}`, `DELETE /users/{id}` — see `app/api/routers/users.py` |
+| FastAPI | `app/main.py` with `create_app()` factory and lifespan handler |
+| PostgreSQL | SQLAlchemy 2 async + asyncpg driver — `app/database/` |
+| Migrations with Alembic | `alembic/versions/0001_create_users_table.py` creates `users` table with `uq_users_email` constraint |
+| Redis (cache) | Cache-aside with automatic invalidation on all write operations — `app/cache/user_cache.py` |
+| Docker Compose | 3 services (`db`, `cache`, `app`) with healthchecks and `depends_on` using `service_healthy` condition |
+| Migrations on startup | `alembic upgrade head && uvicorn ...` in the `app` service command — fails fast if migration fails |
+| Email uniqueness | Database constraint `uq_users_email` + `DuplicateEmailError` → HTTP 409 |
+| Pagination | `GET /users?page=1&page_size=20` returning `total`, `page`, `page_size`, `items` |
+| Payload validation | Pydantic v2 with `EmailStr`, `min_length`, `ge/le` — HTTP 422 for invalid payload |
+| Unit tests | 35 tests using mocks for service, repository, and cache — no external dependencies |
+| Integration tests | 16 tests in `tests/test_api_integration.py` — router → service → in-memory SQLite (no external infra) |
+
 
 ## 📖 Overview
 
@@ -161,8 +182,6 @@ cp .env.example .env
 ## 🐳 Running with Docker Compose
 
 This is the recommended way to run the full stack.
-
-### First run (or after deleting the data volume)
 
 ```bash
 cp .env.example .env          # only needed once
@@ -330,27 +349,34 @@ alembic upgrade head
 
 ## 🧪 Tests
 
-All tests are pure unit tests with mocked dependencies.
-No database or Redis instance is required.
+The test suite is split into two layers:
+
+**Unit tests** — `tests/test_user_service.py`, `test_user_repository.py`, `test_user_cache.py`
+All dependencies (database session, Redis client) are mocked. No external services required.
+
+**Integration tests** — `tests/test_api_integration.py`
+Full HTTP request cycle: router → service → repository → SQLite in-memory database.
+FastAPI dependency overrides replace PostgreSQL with SQLite (aiosqlite) and Redis with a no-op cache.
+No external services required. Covers: create, get, list, update, delete, pagination, 404/409/422 errors, and the complete CRUD lifecycle.
 
 ```bash
-# Run all tests
+# Run all tests (51 total)
 pytest
 
 # Verbose output
 pytest -v
 
-# Single test file
-pytest tests/test_user_service.py -v
+# Integration tests only
+pytest tests/test_api_integration.py -v
 
-# Single test class
-pytest tests/test_user_service.py::TestCreateUser -v
+# Unit tests only
+pytest tests/test_user_service.py tests/test_user_repository.py tests/test_user_cache.py -v
 
-# With coverage (requires pytest-cov)
+# With coverage report
 pytest --cov=app --cov-report=term-missing
 ```
 
-Expected: **35 tests passing**.
+Expected: **51 tests passing**.
 
 ---
 
