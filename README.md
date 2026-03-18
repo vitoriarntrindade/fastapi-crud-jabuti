@@ -26,10 +26,11 @@
 ## 📚 Table of Contents
 
 - [📖 Overview](#-overview)
-- [✅ Challenge Alignment](#-Challenge-Alignment)
+- [✅ Challenge Alignment](#-challenge-alignment)
 - [🏗 Architecture](#-architecture)
 - [📂 Project Structure](#-project-structure)
 - [⚙️ Environment Variables](#️-environment-variables)
+- [🛠 Makefile Commands](#-makefile-commands)
 - [🐳 Running with Docker Compose](#-running-with-docker-compose)
 - [🚀 Running Locally (without Docker)](#-running-locally-without-docker)
 - [🗄 Database Migrations](#-database-migrations)
@@ -62,7 +63,26 @@ Direct mapping between the case requirements and their corresponding implementat
 | Integration tests | 16 tests in `tests/test_api_integration.py` — router → service → in-memory SQLite (no external infra) |
 
 
-## 📖 Overview
+## � Makefile Commands
+
+| Command | Description |
+|---|---|
+| `make env` | Copy `.env.example` → `.env` |
+| `make build` | Build Docker images (no cache) |
+| `make up` | Start containers in background |
+| `make build-up` | Build and start containers in background |
+| `make down` | Stop and remove containers |
+| `make restart` | Restart the `app` container |
+| `make logs` | Follow `app` container logs |
+| `make test` | Run the full test suite |
+| `make lint` | Run Ruff linter |
+| `make fmt` | Run Ruff formatter |
+| `make migrate` | Run `alembic upgrade head` inside the container |
+| `make shell` | Open a bash shell inside the `app` container |
+
+---
+
+## �📖 Overview
 
 This API manages a `User` entity with full CRUD over REST:
 
