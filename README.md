@@ -1,6 +1,6 @@
 # 🐢 Jabuti Users API
 
-> A production-ready **Users CRUD API** built with **FastAPI**, **PostgreSQL**, and **Redis** —
+>  **Users CRUD API** built with **FastAPI**, **PostgreSQL**, and **Redis** —
 > designed to reflect real-world engineering practices.
 
 ---
