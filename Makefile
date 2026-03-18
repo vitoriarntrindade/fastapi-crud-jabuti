@@ -1,4 +1,6 @@
-.PHONY: env build up down restart logs test lint fmt migrate shell
+.PHONY: env build up down restart logs test lint fmt migrate shell init
+
+init: env build-up
 
 env:
 	cp .env.example .env
