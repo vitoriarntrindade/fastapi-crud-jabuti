@@ -568,3 +568,45 @@ source .venv/bin/activate
 pip install -e ".[dev]"
 pytest
 ```
+
+---
+
+## 🚧 Out of Scope — Potential Future Improvements
+
+The following features were intentionally left out as they fall outside the scope of this project (a focused Users CRUD API), but would be natural next steps in a production system:
+
+### 🔐 Authentication & Authorization
+
+- **JWT authentication** — issue signed access/refresh tokens on login and validate them via a FastAPI dependency on protected routes
+- **Password hashing** — store passwords with `bcrypt` or `argon2`; never expose them in responses
+- **Ownership enforcement** — inject the authenticated user into route dependencies so that `PUT /users/{id}` and `DELETE /users/{id}` only succeed when `current_user.id == user_id` (or the caller has an admin role)
+- **Role-based access control (RBAC)** — introduce a `role` field (`admin`, `user`) and guard sensitive endpoints accordingly
+- **OAuth2 / social login** — delegate authentication to an identity provider (Google, GitHub) via the OAuth2 authorization code flow
+
+### 📧 Email & Account Lifecycle
+
+- **Email verification** — send a confirmation link after registration and block login until the address is verified
+- **Password reset flow** — generate a short-lived signed token, deliver it by email, and allow the user to set a new password
+- **Soft delete** — add a `deleted_at` timestamp instead of hard-deleting rows, preserving audit history
+- **Account deactivation** — allow users to deactivate their own accounts without permanently removing data
+
+### 🛡️ Security Hardening
+
+- **Rate limiting** — throttle endpoints (especially login and registration) with `slowapi` or an API gateway to prevent brute-force and spam
+- **HTTPS / TLS termination** — terminate TLS at a reverse proxy (Nginx, Traefik) in front of the application
+- **CORS configuration** — restrict allowed origins to trusted front-end domains instead of a wildcard
+- **Request ID tracing** — attach a unique `X-Request-ID` header to every request for distributed tracing
+
+### 📊 Observability
+
+- **Structured JSON logging** — emit logs as JSON for ingestion by log aggregators (Datadog, Loki, CloudWatch)
+- **Metrics** — expose a `/metrics` endpoint with Prometheus counters and histograms for request latency and cache hit rates
+- **Health checks** — add `/healthz` (liveness) and `/readyz` (readiness) endpoints that verify DB and Redis connectivity
+- **Distributed tracing** — instrument with OpenTelemetry to trace requests across services
+
+### ⚙️ API & Data Quality
+
+- **Cursor-based pagination** — replace offset pagination with cursor-based pagination for stable, efficient traversal of large datasets
+- **Field-level validation** — enforce stricter rules (e.g., disposable email blocklist, name character whitelist)
+- **API versioning** — prefix routes with `/v1/` to allow non-breaking evolution of the contract
+- **OpenAPI enhancements** — add detailed response examples and error schemas to the auto-generated docs
