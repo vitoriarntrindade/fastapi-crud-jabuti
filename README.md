@@ -131,22 +131,22 @@ Copy the example file before running anything:
 cp .env.example .env
 ```
 
-| Variable | Default | Description |
-|---|---|---|
-| `APP_ENV` | `development` | Environment name |
-| `APP_HOST` | `0.0.0.0` | Bind host |
-| `APP_PORT` | `8000` | Bind port |
-| `LOG_LEVEL` | `INFO` | Logging level |
-| `POSTGRES_HOST` | `localhost` | PostgreSQL host |
-| `POSTGRES_PORT` | `5432` | PostgreSQL port |
-| `POSTGRES_DB` | `jabuti_db` | Database name |
-| `POSTGRES_USER` | `jabuti_user` | Database user |
+| Variable | Default           | Description |
+|---|-------------------|---|
+| `APP_ENV` | `development`     | Environment name |
+| `APP_HOST` | `0.0.0.0`         | Bind host |
+| `APP_PORT` | `8001`            | Bind port |
+| `LOG_LEVEL` | `INFO`            | Logging level |
+| `POSTGRES_HOST` | `localhost`       | PostgreSQL host |
+| `POSTGRES_PORT` | `5432`            | PostgreSQL port |
+| `POSTGRES_DB` | `jabuti_db`       | Database name |
+| `POSTGRES_USER` | `jabuti_user`     | Database user |
 | `POSTGRES_PASSWORD` | `jabuti_password` | Database password |
-| `REDIS_HOST` | `localhost` | Redis host |
-| `REDIS_PORT` | `6379` | Redis port |
-| `REDIS_DB` | `0` | Redis logical database |
-| `CACHE_TTL_SECONDS` | `300` | Per-user cache TTL |
-| `CACHE_LIST_TTL_SECONDS` | `60` | User-list cache TTL |
+| `REDIS_HOST` | `localhost`       | Redis host |
+| `REDIS_PORT` | `6379`            | Redis port |
+| `REDIS_DB` | `0`               | Redis logical database |
+| `CACHE_TTL_SECONDS` | `300`             | Per-user cache TTL |
+| `CACHE_LIST_TTL_SECONDS` | `60`              | User-list cache TTL |
 
 > **Note:** When running via Docker Compose, `POSTGRES_HOST`, `POSTGRES_PORT`,
 > `REDIS_HOST`, and `REDIS_PORT` are **overridden automatically** by
@@ -171,10 +171,10 @@ What happens automatically:
 1. PostgreSQL starts and passes its health check
 2. Redis starts and passes its health check
 3. The app runs `alembic upgrade head` — creates the `users` table
-4. Uvicorn starts on port `8000`
+4. Uvicorn starts on port `8001`
 
-API: <http://localhost:8000>
-Docs: <http://localhost:8000/docs>
+API: <http://localhost:8001>
+Docs: <http://localhost:8001/docs>
 
 ### Subsequent runs (volume already exists)
 
@@ -259,8 +259,8 @@ python run.py
 # or: uvicorn app.main:app --reload
 ```
 
-API: <http://localhost:8000>
-Docs: <http://localhost:8000/docs>
+API: <http://localhost:8001>
+Docs: <http://localhost:8001/docs>
 
 > **`alembic upgrade head` must be run before the first start and after
 > every migration file is added.** Skipping this step causes
@@ -371,7 +371,7 @@ ruff check app/ tests/ && mypy app/ && pytest
 
 ## 🔌 API Endpoints
 
-Base URL: `http://localhost:8000`
+Base URL: `http://localhost:8001`
 
 | Method | Path | Description | Success | Error |
 |--------|------|-------------|---------|-------|
@@ -398,23 +398,23 @@ GET /users?page=2&page_size=10
 
 ```bash
 # Create
-curl -X POST http://localhost:8000/users \
+curl -X POST http://localhost:8001/users \
   -H "Content-Type: application/json" \
   -d '{"name": "Alice", "email": "alice@example.com", "age": 30}'
 
 # List
-curl "http://localhost:8000/users?page=1&page_size=20"
+curl "http://localhost:8001/users?page=1&page_size=20"
 
 # Get by ID
-curl http://localhost:8000/users/<uuid>
+curl http://localhost:8001/users/<uuid>
 
 # Update (partial — only send fields to change)
-curl -X PUT http://localhost:8000/users/<uuid> \
+curl -X PUT http://localhost:8001/users/<uuid> \
   -H "Content-Type: application/json" \
   -d '{"name": "Alice Updated"}'
 
 # Delete
-curl -X DELETE http://localhost:8000/users/<uuid>
+curl -X DELETE http://localhost:8001/users/<uuid>
 ```
 
 ---
@@ -525,7 +525,7 @@ cat .env
 
 ```bash
 # Find the process using the port
-lsof -i :8000
+lsof -i :8001
 lsof -i :5432
 lsof -i :6379
 
