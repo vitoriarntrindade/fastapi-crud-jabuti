@@ -25,6 +25,7 @@
 
 ## 📚 Table of Contents
 
+- [⚡ Quick Start](#-quick-start)
 - [📖 Overview](#-overview)
 - [✅ Challenge Alignment](#-challenge-alignment)
 - [🏗 Architecture](#-architecture)
@@ -40,6 +41,27 @@
 - [⚡ Cache Strategy](#-cache-strategy)
 - [🧠 Design Decisions](#-design-decisions)
 - [❓ Troubleshooting](#-troubleshooting)
+
+---
+
+## ⚡ Quick Start
+
+```bash
+make doctor   # verify Docker is healthy and DNS works inside containers
+make init     # copy .env, build images, and start the stack
+```
+
+### 🧯 DNS Troubleshooting
+
+If `make doctor` reports that Docker cannot resolve DNS (common on Linux with `systemd-resolved`):
+
+```bash
+sudo ./scripts/fix-docker-dns-linux.sh
+```
+
+The script backs up your existing `/etc/docker/daemon.json`, configures public DNS
+servers (`1.1.1.1`, `8.8.8.8`), restarts the Docker daemon, and validates the fix.
+Run `make doctor` again afterwards to confirm.
 
 ---
 
@@ -67,6 +89,8 @@ Direct mapping between the case requirements and their corresponding implementat
 
 | Command | Description |
 |---|---|
+| `make doctor` | Run preflight checks (Docker running + DNS inside containers) |
+| `make bootstrap` | Run preflight checks, then build and start the full stack |
 | `make init` | **First-time setup**: copy `.env` + build + start |
 | `make env` | Copy `.env.example` → `.env` |
 | `make build` | Build Docker images (no cache) |
@@ -533,6 +557,32 @@ the schema can be upgraded, downgraded, and reproduced identically in any enviro
 ---
 
 ## ❓ Troubleshooting
+
+### Docker cannot resolve DNS inside containers
+
+This is common on Linux systems using `systemd-resolved`, which binds its stub
+resolver to `127.0.0.53` — a loopback address that is unreachable from inside
+Docker containers.
+
+Run the preflight check to confirm:
+
+```bash
+make doctor
+```
+
+If DNS is broken, apply the automated fix:
+
+```bash
+sudo ./scripts/fix-docker-dns-linux.sh
+```
+
+The script will:
+1. Back up any existing `/etc/docker/daemon.json`
+2. Set `"dns": ["1.1.1.1", "8.8.8.8"]`
+3. Restart the Docker daemon
+4. Verify the fix worked
+
+---
 
 ### `relation "users" does not exist`
 

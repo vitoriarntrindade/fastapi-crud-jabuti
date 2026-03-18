@@ -1,6 +1,12 @@
-.PHONY: env build up down restart logs test lint fmt migrate shell init
+.PHONY: env build up down restart logs test lint fmt migrate shell init doctor bootstrap
 
 init: env build-up
+
+doctor:
+	bash ./scripts/docker-doctor.sh
+
+bootstrap:
+	bash ./scripts/docker-doctor.sh && docker compose up --build
 
 env:
 	cp .env.example .env
