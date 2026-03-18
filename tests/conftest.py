@@ -8,7 +8,7 @@ import pytest
 from app.cache.user_cache import UserCache
 from app.database.models import User
 from app.repositories.user_repository import UserRepository
-from app.schemas.user import UserCreate, UserUpdate
+from app.schemas.user import UserCreate, UserReplace, UserUpdate
 from app.services.user_service import UserService
 
 
@@ -30,8 +30,14 @@ def user_create_payload() -> UserCreate:
 
 
 @pytest.fixture
+def user_replace_payload() -> UserReplace:
+    """Return a full UserReplace payload (PUT semantics — all fields required)."""
+    return UserReplace(name="Alice Replaced", email="alice-replaced@example.com", age=32)
+
+
+@pytest.fixture
 def user_update_payload() -> UserUpdate:
-    """Return a partial UserUpdate payload for testing field updates."""
+    """Return a partial UserUpdate payload for testing field updates (PATCH semantics)."""
     return UserUpdate(name="Alice Updated", age=31)
 
 
@@ -42,6 +48,7 @@ def mock_repository(sample_user: User) -> MagicMock:
     repo.get_by_id = AsyncMock(return_value=sample_user)
     repo.list_paginated = AsyncMock(return_value=([sample_user], 1))
     repo.create = AsyncMock(return_value=sample_user)
+    repo.replace = AsyncMock(return_value=sample_user)
     repo.update = AsyncMock(return_value=sample_user)
     repo.delete = AsyncMock(return_value=None)
     return repo

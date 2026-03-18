@@ -13,8 +13,16 @@ class UserCreate(BaseModel):
     age: int = Field(..., ge=0, le=150, examples=[30])
 
 
+class UserReplace(BaseModel):
+    """Payload for fully replacing an existing user (PUT semantics — all fields required)."""
+
+    name: str = Field(..., min_length=1, max_length=255, examples=["Alice Smith"])
+    email: EmailStr = Field(..., examples=["alice@example.com"])
+    age: int = Field(..., ge=0, le=150, examples=[30])
+
+
 class UserUpdate(BaseModel):
-    """Payload for updating an existing user (all fields optional)."""
+    """Payload for partially updating an existing user (PATCH semantics — all fields optional)."""
 
     name: str | None = Field(default=None, min_length=1, max_length=255)
     email: EmailStr | None = Field(default=None)
